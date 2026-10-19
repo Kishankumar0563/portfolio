@@ -1,132 +1,300 @@
+/* ============================================================
+   KISHAN KUMAR — Portfolio Scripts (Vanilla JS)
+   Typing | Counters | Reveal | Filters | Menu | Form | More
+   ============================================================ */
+
 'use strict';
 
-//Opening or closing side bar
+/* ---------- Helper ---------- */
+const $ = (sel, ctx = document) => ctx.querySelector(sel);
+const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
 
-const elementToggleFunc = function (elem) { elem.classList.toggle("active"); }
+/* ============================================================
+   1. Preloader
+============================================================ */
+window.addEventListener('load', () => {
+    const preloader = $('#preloader');
+    setTimeout(() => preloader.classList.add('hidden'), 450);
+    // Fallback hide (agar 'load' event slow ho)
+    setTimeout(() => preloader.classList.add('hidden'), 3000);
+});
 
-const sidebar = document.querySelector("[data-sidebar]");
-const sidebarBtn = document.querySelector("[data-sidebar-btn]");
+/* ============================================================
+   2. Cursor Glow (desktop only)
+============================================================ */
+const cursorGlow = $('#cursorGlow');
+const isDesktop = window.matchMedia('(pointer: fine)').matches;
 
-sidebarBtn.addEventListener("click", function() {elementToggleFunc(sidebar); })
+if (cursorGlow && isDesktop) {
+    let gx = 0, gy = 0, cx = 0, cy = 0;
 
-//Activating Modal-testimonial
-
-const testimonialsItem = document.querySelectorAll('[data-testimonials-item]');
-const modalContainer = document.querySelector('[data-modal-container]');
-const modalCloseBtn = document.querySelector('[data-modal-close-btn]');
-const overlay = document.querySelector('[data-overlay]');
-
-const modalImg = document.querySelector('[data-modal-img]');
-const modalTitle = document.querySelector('[data-modal-title]');
-const modalText = document.querySelector('[data-modal-text]');
-
-const testimonialsModalFunc = function () {
-    modalContainer.classList.toggle('active');
-    overlay.classList.toggle('active');
-}
-
-for (let i = 0; i < testimonialsItem.length; i++) {
-    testimonialsItem[i].addEventListener('click', function () {
-        modalImg.src = this.querySelector('[data-testimonials-avatar]').src;
-        modalImg.alt = this.querySelector('[data-testimonials-avatar]').alt;
-        modalTitle.innerHTML = this.querySelector('[data-testimonials-title]').innerHTML;
-        modalText.innerHTML = this.querySelector('[data-testimonials-text]').innerHTML;
-
-        testimonialsModalFunc();
-    })
-}
-
-//Activating close button in modal-testimonial
-
-modalCloseBtn.addEventListener('click', testimonialsModalFunc);
-overlay.addEventListener('click', testimonialsModalFunc);
-
-//Activating Filter Select and filtering options
-
-const select = document.querySelector('[data-select]');
-const selectItems = document.querySelectorAll('[data-select-item]');
-const selectValue = document.querySelector('[data-select-value]');
-const filterBtn = document.querySelectorAll('[data-filter-btn]');
-
-select.addEventListener('click', function () {elementToggleFunc(this); });
-
-for(let i = 0; i < selectItems.length; i++) {
-    selectItems[i].addEventListener('click', function() {
-
-        let selectedValue = this.innerText.toLowerCase();
-        selectValue.innerText = this.innerText;
-        elementToggleFunc(select);
-        filterFunc(selectedValue);
-
+    window.addEventListener('mousemove', (e) => {
+        gx = e.clientX;
+        gy = e.clientY;
+        cursorGlow.style.opacity = '1';
     });
+
+    (function animateGlow() {
+        cx += (gx - cx) * 0.08;
+        cy += (gy - cy) * 0.08;
+        cursorGlow.style.left = cx + 'px';
+        cursorGlow.style.top = cy + 'px';
+        requestAnimationFrame(animateGlow);
+    })();
 }
 
-const filterItems = document.querySelectorAll('[data-filter-item]');
+/* ============================================================
+   3. Navbar — scrolled state + scrollspy + mobile menu
+============================================================ */
+const navbar = $('#navbar');
+const navMenu = $('#navMenu');
+const hamburger = $('#hamburger');
+const navLinks = $$('.nav-link');
+const sections = $$('main section[id]');
 
-const filterFunc = function (selectedValue) {
-    for(let i = 0; i < filterItems.length; i++) {
-        if(selectedValue == "all") {
-            filterItems[i].classList.add('active');
-        } else if (selectedValue == filterItems[i].dataset.category) {
-            filterItems[i].classList.add('active');
+window.addEventListener('scroll', () => {
+    // Scrolled background
+    navbar.classList.toggle('scrolled', window.scrollY > 40);
+
+    // Scrollspy
+    let current = 'home';
+    sections.forEach((sec) => {
+        if (window.scrollY >= sec.offsetTop - 140) current = sec.id;
+    });
+    navLinks.forEach((link) => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+    });
+
+    // Back to top visibility
+    const backToTop = $('#backToTop');
+    if (backToTop) backToTop.classList.toggle('visible', window.scrollY > 500);
+}, { passive: true });
+
+// Mobile menu toggle
+hamburger.addEventListener('click', () => {
+    hamburger.classList.toggle('active');
+    navMenu.classList.toggle('active');
+    document.body.style.overflow = navMenu.classList.contains('active') ? 'hidden' : '';
+});
+
+// Close menu on link click
+navLinks.forEach((link) => {
+    link.addEventListener('click', () => {
+        hamburger.classList.remove('active');
+        navMenu.classList.remove('active');
+        document.body.style.overflow = '';
+    });
+});
+
+/* ============================================================
+   4. Typing Effect
+============================================================ */
+const typingEl = $('#typing');
+const roles = [
+    'Full Stack Software Engineer',
+    'PHP & Laravel Expert',
+    'REST API Developer',
+    'React.js Developer',
+    'MySQL Database Designer'
+];
+
+let roleIndex = 0, charIndex = 0, isDeleting = false;
+
+function typeEffect() {
+    const current = roles[roleIndex];
+
+    typingEl.textContent = current.substring(0, charIndex);
+
+    if (!isDeleting && charIndex < current.length) {
+        charIndex++;
+        setTimeout(typeEffect, 65);
+    } else if (isDeleting && charIndex > 0) {
+        charIndex--;
+        setTimeout(typeEffect, 32);
+    } else {
+        if (!isDeleting) {
+            isDeleting = true;
+            setTimeout(typeEffect, 1800); // pause at full word
         } else {
-            filterItems[i].classList.remove('active');
+            isDeleting = false;
+            roleIndex = (roleIndex + 1) % roles.length;
+            setTimeout(typeEffect, 350);
         }
     }
 }
 
-//Enabling filter button for larger screens 
+if (typingEl) typeEffect();
 
-let lastClickedBtn = filterBtn[0];
+/* ============================================================
+   5. Reveal on Scroll + Counters + Skill Bars
+============================================================ */
+const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
 
-for (let i = 0; i < filterBtn.length; i++) {
-    
-    filterBtn[i].addEventListener('click', function() {
+        const el = entry.target;
+        el.classList.add('revealed');
 
-        let selectedValue = this.innerText.toLowerCase();
-        selectValue.innerText = this.innerText;
-        filterFunc(selectedValue);
-
-        lastClickedBtn.classList.remove('active');
-        this.classList.add('active');
-        lastClickedBtn = this;
-
-    })
-}
-
-// Enabling Contact Form
-
-const form = document.querySelector('[data-form]');
-const formInputs = document.querySelectorAll('[data-form-input]');
-const formBtn = document.querySelector('[data-form-btn]');
-
-for(let i = 0; i < formInputs.length; i++) {
-    formInputs[i].addEventListener('input', function () {
-        if(form.checkValidity()) {
-            formBtn.removeAttribute('disabled');
-        } else { 
-            formBtn.setAttribute('disabled', '');
+        // Counter animation
+        const counter = el.querySelector('.counter');
+        if (counter && !counter.dataset.done) {
+            counter.dataset.done = '1';
+            animateCounter(counter);
         }
-    })
+
+        // Skill bar fill
+        const bar = el.querySelector('.skill-bar span');
+        if (bar && !bar.dataset.done) {
+            bar.dataset.done = '1';
+            setTimeout(() => { bar.style.width = bar.style.getPropertyValue('--w'); }, 120);
+        }
+
+        revealObserver.unobserve(el);
+    });
+}, { threshold: 0.18, rootMargin: '0px 0px -40px 0px' });
+
+$$('.reveal').forEach((el) => revealObserver.observe(el));
+
+function animateCounter(el) {
+    const target = +el.dataset.count;
+    const duration = 1600;
+    const start = performance.now();
+
+    function update(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        // easeOutQuart
+        const eased = 1 - Math.pow(1 - progress, 4);
+        el.textContent = Math.round(eased * target);
+        if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
 }
 
-// Enabling Page Navigation 
+/* ============================================================
+   6. Skills Filter
+============================================================ */
+const skillFilterBtns = $$('[data-skill-filter]');
+const skillItems = $$('#skillsGrid .skill-item');
 
-const navigationLinks = document.querySelectorAll('[data-nav-link]');
-const pages = document.querySelectorAll('[data-page]');
+skillFilterBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+        skillFilterBtns.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
 
-for(let i = 0; i < navigationLinks.length; i++) {
-    navigationLinks[i].addEventListener('click', function() {
-        
-        for(let i = 0; i < pages.length; i++) {
-            if(this.innerHTML.toLowerCase() == pages[i].dataset.page) {
-                pages[i].classList.add('active');
-                navigationLinks[i].classList.add('active');
-                window.scrollTo(0, 0);
-            } else {
-                pages[i].classList.remove('active');
-                navigationLinks[i]. classList.remove('active');
+        const value = btn.dataset.skillFilter;
+        skillItems.forEach((item) => {
+            const show = value === 'all' || item.dataset.category === value;
+            item.classList.toggle('hide', !show);
+            if (show) {
+                item.classList.remove('revealed');
+                requestAnimationFrame(() => item.classList.add('revealed'));
             }
+        });
+    });
+});
+
+/* ============================================================
+   7. Projects Filter
+============================================================ */
+const projectFilterBtns = $$('[data-filter]');
+const projectCards = $$('#projectsGrid .project-card');
+
+projectFilterBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+        projectFilterBtns.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const value = btn.dataset.filter;
+        projectCards.forEach((card) => {
+            const show = value === 'all' || card.dataset.category === value;
+            card.classList.toggle('hide', !show);
+            if (show) {
+                card.classList.remove('revealed');
+                requestAnimationFrame(() => card.classList.add('revealed'));
+            }
+        });
+    });
+});
+
+/* ============================================================
+   8. Back To Top
+============================================================ */
+$('#backToTop').addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+/* ============================================================
+   9. Contact Form (FormSubmit AJAX)
+============================================================ */
+const contactForm = $('#contactForm');
+const submitBtn = $('#submitBtn');
+const formStatus = $('#formStatus');
+
+if (contactForm) {
+    contactForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const btnText = submitBtn.querySelector('.btn-text');
+        const original = btnText.textContent;
+
+        btnText.textContent = 'Sending...';
+        submitBtn.disabled = true;
+        formStatus.style.color = '#96a0b5';
+        formStatus.textContent = '';
+
+        try {
+            const response = await fetch(contactForm.action, {
+                method: 'POST',
+                body: new FormData(contactForm),
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (response.ok) {
+                formStatus.style.color = '#34d399';
+                formStatus.textContent = '✓ Message sent successfully! I will get back to you within 24 hours.';
+                contactForm.reset();
+            } else {
+                throw new Error('Send failed');
+            }
+        } catch (err) {
+            formStatus.style.color = '#f87171';
+            formStatus.textContent = 'Message could not send. Please email me directly at kishankashyap0563@gmail.com';
+        } finally {
+            btnText.textContent = original;
+            submitBtn.disabled = false;
         }
     });
 }
+
+/* ============================================================
+   10. Blob Parallax (light mouse parallax on desktop)
+============================================================ */
+if (isDesktop) {
+    const blobs = $$('.blob');
+    window.addEventListener('mousemove', (e) => {
+        const x = (e.clientX / window.innerWidth - 0.5);
+        const y = (e.clientY / window.innerHeight - 0.5);
+        blobs.forEach((blob, i) => {
+            const depth = (i + 1) * 14;
+            blob.style.marginLeft = x * depth + 'px';
+            blob.style.marginTop = y * depth + 'px';
+        });
+    }, { passive: true });
+}
+
+/* ============================================================
+   11. Auto Year + Smooth anchor offset for older browsers
+============================================================ */
+$('#year').textContent = new Date().getFullYear();
+
+$$('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener('click', (e) => {
+        const id = anchor.getAttribute('href');
+        if (id === '#' || id.length < 2) return;
+        const target = $(id);
+        if (!target) return;
+        e.preventDefault();
+        const top = id === '#home' ? 0 : target.getBoundingClientRect().top + window.scrollY - 78;
+        window.scrollTo({ top, behavior: 'smooth' });
+    });
+});
